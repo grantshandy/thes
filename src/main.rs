@@ -1,63 +1,189 @@
-use clap::{crate_version, App, Arg};
+use clap::{App, Arg, ArgMatches, crate_name, crate_version, crate_authors, crate_description};
 use colored::Colorize;
-use thesaurus::synonym;
+use thesaurus::{Thesaurus, WordType};
+use std::io;
+use std::io::prelude::*;
+
+use shrust::{Shell, ShellIO};
 
 fn main() {
     // Set CLI application details through clap.
-    let matches = App::new("thes")
+    let matches = App::new(crate_name!())
         .version(crate_version!())
-        .author("Grant H. <grantshandy@gmail.com>")
-        .about("Finds synonyms")
+        .author(crate_authors!())
+        .about(crate_description!())
         .arg(
             Arg::with_name("WORD")
                 .help("Word to find synonyms for")
-                .required(true)
+                .required(false)
                 .index(1),
         )
         .arg(
-            Arg::with_name("vertical")
-                .long("vertical")
+            Arg::with_name("type")
+                .long("type")
+                .short("t")
+                .value_name("PART OF SPEECH")
+                .help("Select what parts of speech the synonyms returned will have.")
+                .possible_values(&["verb", "adjective", "adverb", "noun"])
+                .takes_value(true)
+                .required(false)
+        )
+        .arg(
+            Arg::with_name("verbose")
+                .long("verbose")
                 .short("v")
-                .help("Prints synonyms vertically")
+                .help("Prints verbose output, this includes parts of speech for each word.")
+                .required(false)
+        )
+        .arg(
+            Arg::with_name("horizontal")
+                .long("horizontal")
+                .help("Prints synonyms horizontally")
                 .takes_value(false)
                 .required(false),
         )
+        .arg(
+            Arg::with_name("shell")
+                .long("shell")
+                .short("s")
+                .help("Opens an interactive thesaurus shell")
+                .takes_value(false)
+                .required(false)
+        )
         .get_matches();
+    
 
-    let word = match matches.value_of("WORD") {
-        Some(data) => data,
-        None => {
-            eprintln!("{} {} wasn't detected by clap, but was still let through. This is extremely unexpected.\n", "error:".red().bold(), "<WORD>".yellow());
-            eprintln!("USAGE:\n    thes [FLAGS] <WORD>");
-            eprintln!("\nFor more information try {}", "--help".green());
-            "error"
-        }
+    if !matches.is_present("shell") {
+        let word = get_word(matches.clone());
+
+        let word_type: Option<WordType> = match matches.value_of("type") {
+            Some(word_type) => Some(full_name_to_word_type(word_type)),
+            None => None,
+        };
+    
+        thesaurus(matches, word, word_type);
+    } else {
+        shell();
     };
+}
 
-    match synonym(word) {
+fn shell() {
+    println!("Starting shell...");
+
+    let mut shell = Shell::new(());
+    shell.new_command("synonym", "Get a synonym for a word", 1, |io, _, s| {
+        for x in s {
+            let thesaurus = match Thesaurus::synonym(x, None) {
+                Ok(data) => data,
+                Err(error) => {
+                    writeln!(io, "Error : {}", error)?;
+                    break;
+                },
+            };
+    
+            let mut synonyms = String::new();
+
+            for synonym in thesaurus.words.iter() {
+                synonyms.push_str(&format!("{} ({})\n", synonym.name, synonym.word_type));
+            };
+
+            synonyms = (&synonyms[0..synonyms.len() - 1]).to_string();
+
+            writeln!(io, "{}", synonyms)?;
+        }
+
+        Ok(())
+    });
+
+    shell.run_loop(&mut ShellIO::default());
+}
+
+fn thesaurus(app: ArgMatches, word: String, word_type: Option<WordType>) {
+    match Thesaurus::synonym(word.clone(), word_type) {
         Ok(data) => {
             let mut synonyms = String::new();
 
-            for synonym in data.synonyms.iter() {
-                if synonym == word {
+            for synonym in data.words.iter() {
+                if synonym.name == word {
                     continue;
                 };
 
-                if matches.is_present("vertical") {
-                    synonyms.push_str(&format!("{}\n", synonym));
+                if app.is_present("horizontal") {
+                    if app.is_present("verbose") {
+                        synonyms.push_str(&format!("{} ({}), ", synonym.name, synonym.word_type));
+                    } else {
+                        synonyms.push_str(&format!("{} ", synonym.name));
+                    };
                 } else {
-                    synonyms.push_str(&format!("{} ", synonym));
+                    if app.is_present("verbose") {
+                        synonyms.push_str(&format!("{} ({})\n", synonym.name, synonym.word_type));
+                    } else {
+                        synonyms.push_str(&format!("{}\n", synonym.name));
+                    };
                 };
-            }
+            };
 
             synonyms = (&synonyms[0..synonyms.len() - 1]).to_string();
 
             println!("{}", synonyms);
-        }
+        },
         Err(error) => {
-            eprintln!("{} {}\n", "error:".red().bold(), error);
-            eprintln!("USAGE:\n    thes [FLAGS] <WORD>");
-            eprintln!("\nFor more information try {}", "--help".green());
-        }
+            clap_error(error.to_string().as_str());
+        },
+    };
+}
+
+// Designed to imitate clap's errors so we can have our own errors output that look exactly the same :)
+fn clap_error(error: &str) {
+    eprintln!("{} {}\n", "error:".red().bold(), error);
+    eprintln!("USAGE:\n    thes [FLAGS] [OPTIONS] [WORD]\n");
+    eprintln!("For more information try {}", "--help".green());
+}
+
+fn full_name_to_word_type(word_type: &str) -> WordType {
+    match word_type {
+        "verb" => WordType::Verb,
+        "adjective" => WordType::Adjective,
+        "adverb" => WordType::Adverb,
+        "noun" => WordType::Noun,
+        &_ => {
+            clap_error(&format!("{} had an unexpected input, but was still let through. This is extremely unexpected.", "<TYPE>".yellow()));
+            std::process::exit(1);
+        },
+    }
+}
+
+fn get_stdin() -> Option<String> {
+    let mut input = String::new();
+
+    match io::stdin().read_line(&mut input) {
+        Ok(len) => {
+            let len = len - 1;
+
+            if len == 0 {
+                return None;
+            } else {
+                return Some(input);
+            };
+        },
+        Err(error) => {
+            clap_error(&format!("Error getting Stdin: {}", error));
+            std::process::exit(1);
+        },
+    }
+}
+
+fn get_word(app: ArgMatches) -> String {
+    match app.value_of("WORD") {
+        Some(data) => return data.to_string(),
+        None => {
+            match get_stdin() {
+                Some(data) => return (&data[0..data.len() - 1]).to_string(),
+                None => {
+                    clap_error(&format!("The following required arguments were not provided:\n    {}", "<WORD>".red().bold()));
+                    std::process::exit(1);
+                }
+            }
+        },
     };
 }
