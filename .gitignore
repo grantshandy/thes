@@ -1,1 +1,11 @@
 /target
+
+*.zst
+*.x86_64
+
+/pkg/bin/pkg
+/pkg/bin/src
+
+/pkg/git/pkg
+/pkg/git/src
+/pkg/git/thes

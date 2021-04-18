@@ -78,7 +78,7 @@ chill (Verb)
 cool off (Verb)
 ```
 
-Thes also supports a basic interactive shell mode:
+`thes`` also supports a basic interactive shell mode:
 ```
 $ thes -s
 Starting shell...
