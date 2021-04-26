@@ -1,4 +1,8 @@
 # thes
+[![Crates.io](https://img.shields.io/crates/v/thes.svg)](https://crates.io/crates/thes)
+[![Crates.io](https://img.shields.io/crates/d/thes)](https://crates.io/crates/thes)
+[![API](https://docs.rs/thes/badge.svg)](https://docs.rs/thes)
+
 A Completely Offline Thesaurus CLI Tool (Written in Rust)
 
 ## Installation
