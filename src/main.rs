@@ -73,7 +73,7 @@ fn shell() {
     let mut shell = Shell::new(());
     shell.new_command("synonym", "Get a synonym for a word", 1, |io, _, s| {
         for x in s {
-            let thesaurus = match Thesaurus::synonym(x, None) {
+            let thesaurus = match Thesaurus::synonym(x.to_lowercase(), None) {
                 Ok(data) => data,
                 Err(error) => {
                     writeln!(io, "Error : {}", error)?;
@@ -99,12 +99,12 @@ fn shell() {
 }
 
 fn thesaurus(app: ArgMatches, word: String, word_type: Option<WordType>) {
-    match Thesaurus::synonym(word.clone(), word_type) {
+    match Thesaurus::synonym(word.to_lowercase(), word_type) {
         Ok(data) => {
             let mut synonyms = String::new();
 
             for synonym in data.words.iter() {
-                if synonym.name == word {
+                if synonym.name == word.to_lowercase() {
                     continue;
                 };
 
