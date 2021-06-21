@@ -82,27 +82,9 @@ chill (Verb)
 cool off (Verb)
 ```
 
-`thes`` also supports a basic interactive shell mode:
-```
-$ thes -s
-Starting shell...
-> help
- help     :  Print this help
- history  :  Print commands history or run a command from it
- quit     :  Quit
- synonym  :  Get a synonym for a word
-> synonym awesome
-impressive (Adjective)
-amazing (Adjective)
-awing (Adjective)
-awful (Adjective)
-awe-inspiring (Adjective)
-> quit
-```
-
 ## Command Line Arguments
 ```
-thes 0.1.2
+thes 0.1.3
 Grant Handy <grantshandy@gmail.com>
 Offline CLI Thesaurus Tool
 
@@ -114,10 +96,11 @@ FLAGS:
         --horizontal    Prints synonyms horizontally
     -s, --shell         Opens an interactive thesaurus shell
     -V, --version       Prints version information
-    -v, --verbose       Prints verbose output, this includes parts of speech for each word.
+    -v, --verbose       Prints verbose output, this includes parts of speech for each word
 
 OPTIONS:
-    -t, --type <PART OF SPEECH>    Select what parts of speech the synonyms returned will have. [possible values: verb, adjective, adverb, noun]
+    -t, --type <PART OF SPEECH>    Select what parts of speech the synonyms returned will have [possible values: verb,
+                                   adjective, adverb, noun]
 
 ARGS:
     <WORD>    Word to find synonyms for

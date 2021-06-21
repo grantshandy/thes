@@ -2,9 +2,6 @@ use clap::{App, Arg, ArgMatches, crate_name, crate_version, crate_authors, crate
 use colored::Colorize;
 use thesaurus::{Thesaurus, WordType};
 use std::io;
-use std::io::prelude::*;
-
-use shrust::{Shell, ShellIO};
 
 fn main() {
     // Set CLI application details through clap.
@@ -23,7 +20,7 @@ fn main() {
                 .long("type")
                 .short("t")
                 .value_name("PART OF SPEECH")
-                .help("Select what parts of speech the synonyms returned will have.")
+                .help("Select what parts of speech the synonyms returned will have")
                 .possible_values(&["verb", "adjective", "adverb", "noun"])
                 .takes_value(true)
                 .required(false)
@@ -32,7 +29,7 @@ fn main() {
             Arg::with_name("verbose")
                 .long("verbose")
                 .short("v")
-                .help("Prints verbose output, this includes parts of speech for each word.")
+                .help("Prints verbose output, this includes parts of speech for each word")
                 .required(false)
         )
         .arg(
@@ -53,49 +50,14 @@ fn main() {
         .get_matches();
     
 
-    if !matches.is_present("shell") {
-        let word = get_word(matches.clone());
+    let word = get_word(matches.clone());
 
-        let word_type: Option<WordType> = match matches.value_of("type") {
-            Some(word_type) => Some(full_name_to_word_type(word_type)),
-            None => None,
-        };
-    
-        thesaurus(matches, word, word_type);
-    } else {
-        shell();
+    let word_type: Option<WordType> = match matches.value_of("type") {
+        Some(word_type) => Some(full_name_to_word_type(word_type)),
+        None => None,
     };
-}
 
-fn shell() {
-    println!("Starting shell...");
-
-    let mut shell = Shell::new(());
-    shell.new_command("synonym", "Get a synonym for a word", 1, |io, _, s| {
-        for x in s {
-            let thesaurus = match Thesaurus::synonym(x.to_lowercase(), None) {
-                Ok(data) => data,
-                Err(error) => {
-                    writeln!(io, "Error : {}", error)?;
-                    break;
-                },
-            };
-    
-            let mut synonyms = String::new();
-
-            for synonym in thesaurus.words.iter() {
-                synonyms.push_str(&format!("{} ({})\n", synonym.name, synonym.word_type));
-            };
-
-            synonyms = (&synonyms[0..synonyms.len() - 1]).to_string();
-
-            writeln!(io, "{}", synonyms)?;
-        }
-
-        Ok(())
-    });
-
-    shell.run_loop(&mut ShellIO::default());
+    thesaurus(matches, word, word_type);
 }
 
 fn thesaurus(app: ArgMatches, word: String, word_type: Option<WordType>) {

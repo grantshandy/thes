@@ -1,6 +1,6 @@
 [package]
 name = "thes"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Grant Handy <grantshandy@gmail.com>"]
 edition = "2018"
 license = "GPL-3.0"
@@ -15,4 +15,3 @@ categories = ["command-line-utilities"]
 thesaurus = "0.1.3"
 clap = "2.33.3"
 colored = "2"
-shrust = "0.0.7"
