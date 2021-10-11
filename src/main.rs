@@ -1,7 +1,7 @@
-use clap::{App, Arg, ArgMatches, crate_name, crate_version, crate_authors, crate_description};
+use clap::{crate_authors, crate_description, crate_name, crate_version, App, Arg, ArgMatches};
 use colored::Colorize;
-use thesaurus::{Thesaurus, WordType};
 use std::io;
+use thesaurus::{Thesaurus, WordType};
 
 fn main() {
     // Set CLI application details through clap.
@@ -23,14 +23,14 @@ fn main() {
                 .help("Select what parts of speech the synonyms returned will have")
                 .possible_values(&["verb", "adjective", "adverb", "noun"])
                 .takes_value(true)
-                .required(false)
+                .required(false),
         )
         .arg(
             Arg::with_name("verbose")
                 .long("verbose")
                 .short("v")
                 .help("Prints verbose output, this includes parts of speech for each word")
-                .required(false)
+                .required(false),
         )
         .arg(
             Arg::with_name("horizontal")
@@ -45,17 +45,15 @@ fn main() {
                 .short("s")
                 .help("Opens an interactive thesaurus shell")
                 .takes_value(false)
-                .required(false)
+                .required(false),
         )
         .get_matches();
-    
 
     let word = get_word(matches.clone());
 
-    let word_type: Option<WordType> = match matches.value_of("type") {
-        Some(word_type) => Some(full_name_to_word_type(word_type)),
-        None => None,
-    };
+    let word_type: Option<WordType> = matches
+        .value_of("type")
+        .map(|word_type| full_name_to_word_type(word_type));
 
     thesaurus(matches, word, word_type);
 }
@@ -76,22 +74,20 @@ fn thesaurus(app: ArgMatches, word: String, word_type: Option<WordType>) {
                     } else {
                         synonyms.push_str(&format!("{} ", synonym.name));
                     };
+                } else if app.is_present("verbose") {
+                    synonyms.push_str(&format!("{} ({})\n", synonym.name, synonym.word_type));
                 } else {
-                    if app.is_present("verbose") {
-                        synonyms.push_str(&format!("{} ({})\n", synonym.name, synonym.word_type));
-                    } else {
-                        synonyms.push_str(&format!("{}\n", synonym.name));
-                    };
+                    synonyms.push_str(&format!("{}\n", synonym.name));
                 };
-            };
+            }
 
             synonyms = (&synonyms[0..synonyms.len() - 1]).to_string();
 
             println!("{}", synonyms);
-        },
+        }
         Err(error) => {
             clap_error(error.to_string().as_str());
-        },
+        }
     };
 }
 
@@ -111,7 +107,7 @@ fn full_name_to_word_type(word_type: &str) -> WordType {
         &_ => {
             clap_error(&format!("{} had an unexpected input, but was still let through. This is extremely unexpected.", "<TYPE>".yellow()));
             std::process::exit(1);
-        },
+        }
     }
 }
 
@@ -123,28 +119,29 @@ fn get_stdin() -> Option<String> {
             let len = len - 1;
 
             if len == 0 {
-                return None;
+                None
             } else {
-                return Some(input);
-            };
-        },
+                Some(input)
+            }
+        }
         Err(error) => {
             clap_error(&format!("Error getting Stdin: {}", error));
             std::process::exit(1);
-        },
+        }
     }
 }
 
 fn get_word(app: ArgMatches) -> String {
-    match app.value_of("WORD") {
-        Some(data) => return data.to_string(),
-        None => {
-            match get_stdin() {
-                Some(data) => return (&data[0..data.len() - 1]).to_string(),
-                None => {
-                    clap_error(&format!("The following required arguments were not provided:\n    {}", "<WORD>".red().bold()));
-                    std::process::exit(1);
-                }
+    return match app.value_of("WORD") {
+        Some(data) => data.to_string(),
+        None => match get_stdin() {
+            Some(data) => return (&data[0..data.len() - 1]).to_string(),
+            None => {
+                clap_error(&format!(
+                    "The following required arguments were not provided:\n    {}",
+                    "<WORD>".red().bold()
+                ));
+                std::process::exit(1);
             }
         },
     };
